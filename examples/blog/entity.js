@@ -1,5 +1,5 @@
 var queries = require('./queries');
-var store = require('../../knex-store');
+var store = require('../../massive-store');
 
 module.exports = function(opts) {
 	var seneca = this;
