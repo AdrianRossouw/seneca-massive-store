@@ -30,6 +30,7 @@ module.exports = function(opts) {
       if (update) {
         
         table.update(args, function(err, res) {
+          console.log(arguments);
           if (err) { return raiseError('update', err, cb);  }
           cb(null, ent);
         });
@@ -81,11 +82,11 @@ module.exports = function(opts) {
       var qent = args.qent;
 
       db[ent.name].remove(args, function(err, rows) {
-        if (err) { return raiseError('list', err, cb);  }
+        if (err) { return raiseError('remove', err, cb);  }
 
         var result = {rowCount: res};
 
-        seneca.log(args.tag$, 'remove', res.rowCount);
+        seneca.log(args.tag$, 'remove', result.rowCount);
         cb(null, result);
       });
     },
