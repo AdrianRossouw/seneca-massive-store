@@ -1,7 +1,6 @@
 /* jshint mocha: true */
 
 var assert = require('assert');
-var queries = require('./queries');
 var fixture = require('./test.fixture.js');
 
 
@@ -9,23 +8,14 @@ var seneca = require('seneca')({
   strict: { fatal$: false }
 });
 
-seneca.use(require('./entity'));
+seneca.use(require('../../massive-store'), {
+  connection: { db: 'massive-test'  }
+});
 
 describe('blog seneca calls', function() {
 	var id = null;
 	var loadedEnt = null;
 
-  before(function(done) {
-	queries.install()
-	  .then(done.bind(null, null))
-	  .catch(done);
-  });
-
-  after(function(done) {
-	queries.uninstall()
-	  .then(done.bind(null, null))
-	  .catch(done);
-  });
 
 	it('insert', function(done) {
 		var ent = seneca.make$('-/-/blog');
@@ -86,12 +76,8 @@ describe('blog seneca calls', function() {
 		var ent = seneca.make$('-/-/blog');
 		ent.id = id;
 
-		ent.native$(function(err, queries) {
-			assert.ok(queries.insert);
-			assert.ok(queries.update);
-			assert.ok(queries.load);
-			assert.ok(queries.list);
-			assert.ok(queries.remove);
+		ent.native$(function(err, db) {
+			assert.ok(db.blog);
 			done();
 		})
 	});

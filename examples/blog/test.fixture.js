@@ -4,4 +4,4 @@ module.exports = {
 	content: 'Entity Test',
 	createdDate: new Date().toISOString(),
 	createdBy: 'adrian'
-}
+};

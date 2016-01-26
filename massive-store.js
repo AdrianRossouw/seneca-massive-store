@@ -1,115 +1,98 @@
 /* jshint ignore:start */
-var senecaStore = require('seneca/lib/store');
+var senecaStore = require('seneca/lib/store')();
 var uuid = require('node-uuid');
+var massive = require('massive');
 
-module.exports = function CreateStore(entity, queries) {
-	return function(opts) {
-		var seneca = this;
+module.exports = function(opts) {
+  var seneca = this;
 
-		var storeOpts = {map:{}};
-		storeOpts.map[entity] = '*';
-		seneca.log.info('register store', entity);
+  var opts = opts || {};
+  opts.connection = opts.connection || {};
 
-		var storeCmds = {
+  var db = massive.connectSync(opts.connection);
 
-			name: entity,
+  function raiseError(name, err, cb) {
+    seneca.log.error(err['routine'])
+    seneca.log.error(err.detail ? err.detail : err.message);
+    seneca.fail({code: name, start: args.meta$.start, store: 'massive-store'}, cb);
+    return false;
+  }
 
-			save: function (args, cb) {
-				var ent = args.ent;
-				var update = !!ent.id;
-				var query;
+  var storeCmds = {
 
-				if (update) {
-					query = queries.update(args);
+    name: opts.name || 'massive-store',
 
-					process.env.LOG_QUERY && console.log('entity.update', query.toString());
+    save: function (args, cb) {
+      var ent = args.ent;
+      var update = !!ent.id;
+      var table = db[ent.name];
 
-					query.then(function(res) {
-							cb(null, ent);
-						}, function(err) {
-							seneca.log.error(err['routine'])
-							seneca.log.error(err.detail ? err.detail : err.message);
-							seneca.fail({code: 'update', start: args.meta$.start, store: 'knex-store'}, cb);
-						});
+      if (update) {
+        
+        table.update(args, function(err, res) {
+          if (err) { return raiseError('update', err, cb);  }
+          cb(null, ent);
+        });
 
-				} else {
-					args.ent.id = args.ent.id$ || uuid();
+      } else {
+        args.ent.id = args.ent.id$ || uuid();
+        
+        table.insert(args, function(err, res) {
+          if (err) { return raiseError('save', err, cb);  }
+          cb(null, args.ent);
+        });
+      }
+    },
 
-					var query = queries.insert(args);
+    load: function (args, cb) {
+      var ent = args.ent;
 
-					process.env.LOG_QUERY && console.log('entity.insert', query.toString());
+      var table = db[ent.name];
 
-					query.then(function(res) {
-						cb(null, args.ent);
-					}, function(err) {
-						seneca.log.error(err['routine'])
-						seneca.log.error(err.detail ? err.detail : err.message);
-						seneca.fail({code: 'save', start: args.meta$.start, store: 'knex-store'}, cb);
-					});
-				}
-			},
+      table.load(args, function(err, rows) {
+        if (err) { return raiseError('load', err, cb);  }
 
-			load: function (args, cb) {
-				var ent = args.ent;
+        seneca.log(args.tag$, 'load', ent);
 
-				var query = queries.load(args);
-
-				process.env.LOG_QUERY && console.log('entity.load', query.toString());
-
-				query.then(function(rows) {
-					seneca.log(args.tag$, 'load', ent);
-
-					if (rows && rows.length) {
-						ent.data$(rows[0]);
-						cb(null, ent);
-					} else {
-						cb(null, undefined);
-					}
-				}, function(err) {
-					seneca.log.error(err['routine'])
-					seneca.log.error(err.detail ? err.detail : err.message);
-					seneca.fail({code: 'load', start: args.meta$.start, store: 'knex-store'}, cb);
-				});
-			},
+        if (rows && rows.length) {
+          ent.data$(rows[0]);
+          cb(null, ent);
+        } else {
+          cb(null, undefined);
+        }
+      });
+    },
 
 
-			list: function (args, cb) {
-				var qent = args.qent;
+    list: function (args, cb) {
+      var qent = args.qent;
 
-				var query = queries.list(args);
 
-				process.env.LOG_QUERY && console.log('entity.list', query.toString());
+      db[ent.name].list(args, function(err, rows) {
+        if (err) { return raiseError('list', err, cb);  }
 
-				query.then(function(rows) {
-						var list = rows.map(function(row) {	return qent.make$(row);	});
-						seneca.log(args.tag$, 'list', list.length, list[0]);
-						cb(null, list);
-					}, function(err) {
-						seneca.log.error(err['routine'])
-						seneca.log.error(err.detail ? err.detail : err.message);
-						seneca.fail({code: 'list', start: args.meta$.start, store: 'knex-store'}, cb);
-					});
+        var list = rows.map(function(row) {	return qent.make$(row);	});
+        seneca.log(args.tag$, 'list', list.length, list[0]);
+        cb(null, list);
+      });
+    },
 
-			},
+    remove: function (args, cb) {
+      var qent = args.qent;
 
-			remove: function (args, cb) {
-				var query = queries.remove(args)
+      db[ent.name].remove(args, function(err, rows) {
+        if (err) { return raiseError('list', err, cb);  }
 
-				process.env.LOG_QUERY && console.log('entity.remove', query.toString());
+        var result = {rowCount: res};
 
-				query.then(function(res) {
-						var result = {rowCount: res};
+        seneca.log(args.tag$, 'remove', res.rowCount);
+        cb(null, result);
+      });
+    },
 
-						cb(null, result);
-						seneca.log(args.tag$, 'remove', res.rowCount);
-					}, function(err) {
-						cb(err, undefined);
-					});
-			},
+    close: function (cb) { /* noop */  },
+    native: function (args, done) {	done(null, db);	}
+  };
 
-			close: function (cb) { /* noop */  },
-			native: function (args, done) {	done(null, queries);	}
-		};
-		senecaStore.init(seneca, storeOpts, storeCmds);
-	};
+  senecaStore.init(seneca, {}, storeCmds);
 };
