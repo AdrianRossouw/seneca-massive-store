@@ -3,43 +3,59 @@ var senecaStore = require('seneca/lib/store')();
 var uuid = require('node-uuid');
 var massive = require('massive');
 
+function fixquery(q) {
+  var qq = {};
+
+  for( var qp in q ) {
+    if( !qp.match(/\$$/) ) {
+      qq[qp] = q[qp];
+    }
+  }
+
+  return qq;
+}
+
 module.exports = function(opts) {
+  var db;
   var seneca = this;
 
   var opts = opts || {};
   opts.connection = opts.connection || {};
 
-  var db = massive.connectSync(opts.connection);
+  function configure(opts, cb) {
+    massive.connect(opts.connection, function(err, dbinst) {
+      if (!err) {
+        db = dbinst;
+      }
+      cb(err); 
+    });
+  };
 
-  function raiseError(name, err, cb) {
-    seneca.log.error(err['routine'])
-    seneca.log.error(err.detail ? err.detail : err.message);
-    seneca.fail({code: name, start: args.meta$.start, store: 'massive-store'}, cb);
-    return false;
-  }
-
-  var storeCmds = {
+  var store = {
 
     name: opts.name || 'massive-store',
 
     save: function (args, cb) {
       var ent = args.ent;
       var update = !!ent.id;
-      var table = db[ent.name];
+      var table = db[args.name];
+
+      var data = fixquery(ent.data$());
 
       if (update) {
-        
-        table.update(args, function(err, res) {
-          console.log(arguments);
+        table.save(data, function(err, res) {
           if (err) { return raiseError('update', err, cb);  }
+          console.log(ent);
           cb(null, ent);
         });
 
       } else {
-        args.ent.id = args.ent.id$ || uuid();
+        data.id = data.id$ || uuid();
         
-        table.insert(args, function(err, res) {
+        console.log(data);
+        table.save(data, function(err, res) {
           if (err) { return raiseError('save', err, cb);  }
+          console.log(arguments);
           cb(null, args.ent);
         });
       }
@@ -47,10 +63,11 @@ module.exports = function(opts) {
 
     load: function (args, cb) {
       var ent = args.ent;
+      var name = args.name;
 
-      var table = db[ent.name];
+      var data = fixquery(args.qent.data$());
 
-      table.load(args, function(err, rows) {
+      db[name].find(data, function(err, rows) {
         if (err) { return raiseError('load', err, cb);  }
 
         seneca.log(args.tag$, 'load', ent);
@@ -95,5 +112,24 @@ module.exports = function(opts) {
     native: function (args, done) {	done(null, db);	}
   };
 
-  senecaStore.init(seneca, {}, storeCmds);
+  var meta = seneca.store.init(seneca, opts, store)
+  desc = meta.desc
+
+
+  seneca.add({init:store.name,tag:meta.tag},function(args,done){
+    configure(opts,function(err){
+      if( err ) return seneca.die('store',err,{store:store.name,desc:desc});
+      return done();
+    });
+  });
+
+  return {name:store.name,tag:meta.tag}
+
+
+  function raiseError(name, err, cb) {
+    seneca.log.error(err['routine'])
+    seneca.log.error(err.detail ? err.detail : err.message);
+    seneca.fail({code: name, start: args.meta$.start, store: 'massive-store'}, cb);
+    return false;
+  }
 };

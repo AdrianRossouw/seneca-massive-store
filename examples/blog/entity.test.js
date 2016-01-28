@@ -12,10 +12,13 @@ seneca.use(require('../../massive-store'), {
   connection: { db: 'massive-test'  }
 });
 
+before(function(done) {
+  seneca.on('ready', done);
+});
+
 describe('blog seneca calls', function() {
 	var id = null;
 	var loadedEnt = null;
-
 
 	it('insert', function(done) {
 		var ent = seneca.make$('-/-/blog');
@@ -43,7 +46,7 @@ describe('blog seneca calls', function() {
 		});
 	});
 
-	it('update', function(done) {
+	it.skip('update', function(done) {
 		loadedEnt.content = 'test changed';
 
 		loadedEnt.save$(function(err, ent) {
@@ -62,7 +65,7 @@ describe('blog seneca calls', function() {
 		});
 	});
 
-	it('remove', function(done) {
+	it.skip('remove', function(done) {
 		var ent = seneca.make$('-/-/blog');
 		ent.id = id;
 

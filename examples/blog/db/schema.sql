@@ -1,4 +1,4 @@
-CREATE TABLE blog_post (
+CREATE TABLE blog (
     id varchar NOT NULL,
     title varchar NOT NULL,
     content varchar,
