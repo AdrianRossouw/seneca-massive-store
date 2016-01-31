@@ -43,20 +43,17 @@ module.exports = function(opts) {
       var data = fixquery(ent.data$());
 
       if (update) {
-        table.save(data, function(err, res) {
+        table.update(data, function(err, res) {
           if (err) { return raiseError('update', err, cb);  }
-          console.log(ent);
           cb(null, ent);
         });
 
       } else {
-        data.id = data.id$ || uuid();
+        ent.id = data.id = data.id$ || uuid();
         
-        console.log(data);
-        table.save(data, function(err, res) {
+        table.insert(data, function(err, res) {
           if (err) { return raiseError('save', err, cb);  }
-          console.log(arguments);
-          cb(null, args.ent);
+          cb(null, ent);
         });
       }
     },
@@ -65,15 +62,14 @@ module.exports = function(opts) {
       var ent = args.ent;
       var name = args.name;
 
-      var data = fixquery(args.qent.data$());
+      var data = fixquery(args.q);
 
-      db[name].find(data, function(err, rows) {
+      db[name].findOne(data, function(err, row) {
         if (err) { return raiseError('load', err, cb);  }
 
         seneca.log(args.tag$, 'load', ent);
-
-        if (rows && rows.length) {
-          ent.data$(rows[0]);
+        if (row) {
+          ent.data$(row);
           cb(null, ent);
         } else {
           cb(null, undefined);
@@ -81,10 +77,9 @@ module.exports = function(opts) {
       });
     },
 
-
     list: function (args, cb) {
       var qent = args.qent;
-
+      var data = fixquery(args.q);
 
       db[ent.name].list(args, function(err, rows) {
         if (err) { return raiseError('list', err, cb);  }

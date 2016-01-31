@@ -1,8 +1,14 @@
 /* jshint mocha: true */
 
 var assert = require('assert');
-var fixture = require('./test.fixture.js');
 
+var fixture = {
+	id: '12345',
+	title: 'Entity Test',
+	content: 'Entity Test',
+	createdDate: new Date(),
+	createdBy: 'adrian'
+};
 
 var seneca = require('seneca')({
   strict: { fatal$: false }
@@ -28,8 +34,8 @@ describe('blog seneca calls', function() {
 		ent.createdBy = fixture.createdBy;
 		ent.createdDate = fixture.createdDate;
 
-		ent.save$(function(err, res) {
-			id = res.data$().id;
+    ent.save$(function(err, res) {
+			id = res.id;
 			done();
 		});
 	});
@@ -37,11 +43,12 @@ describe('blog seneca calls', function() {
 	it('load', function(done) {
 		var ent = seneca.make$('-/-/blog');
 
-		ent.load$({ id: id }, function(err, row) {
+    ent.load$(id, function(err, row) {
 			loadedEnt = row;
 
-			assert.equal(row.id, id);
-			assert.equal(row.createdDate, fixture.createdDate);
+      assert.equal(row.id, id, 'id equals');
+      assert.equal(row.createdBy, fixture.createdBy);
+			assert.equal(row.createdDate.toISOString(), fixture.createdDate.toISOString());
 			done();
 		});
 	});

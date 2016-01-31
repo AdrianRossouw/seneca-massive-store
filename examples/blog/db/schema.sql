@@ -1,7 +1,11 @@
+SET SESSION TIME ZONE 'UTC';
+
+DROP TABLE IF EXISTS blog;
+
 CREATE TABLE blog (
-    id varchar NOT NULL,
+    id varchar NOT NULL primary key,
     title varchar NOT NULL,
     content varchar,
-    created_by varchar NOT NULL,
-    created_date timestamp NOT NULL
+    "createdBy" varchar NOT NULL,
+    "createdDate" timestamptz NOT NULL
 );
