@@ -50,6 +50,7 @@ module.exports = function(opts) {
       if (!err) {
         db = dbinst;
       }
+
       cb(err); 
     });
   };
@@ -86,9 +87,8 @@ module.exports = function(opts) {
       var name = args.name;
 
       var data = fixquery(args.q);
-      //var opts = makeOpts(args.q);
 
-      db[name].findOne(data, /*opts,*/ function(err, row) {
+      db[name].findOne(data, function(err, row) {
         if (err) { return raiseError('load', err, cb);  }
 
         seneca.log(args.tag$, 'load', ent);
