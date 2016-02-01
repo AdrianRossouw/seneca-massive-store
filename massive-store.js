@@ -108,8 +108,8 @@ module.exports = function(opts) {
     native: function (args, done) {	done(null, db);	}
   };
 
-  var meta = seneca.store.init(seneca, opts, store)
-  desc = meta.desc
+  var meta = seneca.store.init(seneca, opts, store);
+  desc = meta.desc;
 
 
   seneca.add({init:store.name,tag:meta.tag},function(args,done){
