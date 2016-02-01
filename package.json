@@ -4,7 +4,8 @@
   "description": "a non-traditional seneca entity store that builds on massive.js",
   "main": "./massive-store.js",
   "scripts": {
-    "test": "mocha ./examples/*/*.test.js"
+    "test": "npm run init-postgres && mocha ./test/*.test.js",
+    "init-postgres": "psql -U postgres -c 'drop database if exists massive_test' && psql -U postgres -c 'create database massive_test' && cat test/db/schema.sql | psql -U postgres massive_test"
   },
   "author": "Adrian Rossouw",
   "contributors": [

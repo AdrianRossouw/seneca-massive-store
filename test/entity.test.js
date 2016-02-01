@@ -14,8 +14,8 @@ var seneca = require('seneca')({
   strict: { fatal$: false }
 });
 
-seneca.use(require('../../massive-store'), {
-  connection: { db: 'massive-test'  }
+seneca.use(require('../massive-store'), {
+  connection: { db: 'massive_test'  }
 });
 
 before(function(done) {
