@@ -9,8 +9,8 @@ Lead Maintainer: [Adrian Rossouw](https://github.com/adrianrossouw)
 
 A storage engine that uses [massive.js][] to persist data into a postgresql database.
 
-- __Version:__ 0.2.3
-- __Tested on:__ Seneca 0.7
+- __Version:__ 0.0.1
+- __Tested on:__ Seneca 1.0
 - __Node:__ 0.10, 0.12, 4
 - __License:__ [MIT][]
 

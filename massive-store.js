@@ -2,6 +2,7 @@
 var senecaStore = require('seneca/lib/store')();
 var uuid = require('node-uuid');
 var massive = require('massive');
+var _ = require('lodash');
 
 function fixquery(q) {
   var qq = {};
@@ -13,6 +14,28 @@ function fixquery(q) {
   }
 
   return qq;
+}
+
+function makeOpts(q) {
+  var opts = {};
+
+  if (q.limit$) {
+    opts.limit = q.limit$;
+  }
+
+  if (q.skip$) {
+    opts.offset = q.skip$;
+  }
+
+  if (q.fields$) {
+    opts.columns = q.fields$;
+  }
+
+  if (q.sort$) {
+    opts.order = _.keys(q.sort$ || {});
+  }
+
+  return opts;
 }
 
 module.exports = function(opts) {
@@ -63,8 +86,9 @@ module.exports = function(opts) {
       var name = args.name;
 
       var data = fixquery(args.q);
+      //var opts = makeOpts(args.q);
 
-      db[name].findOne(data, function(err, row) {
+      db[name].findOne(data, /*opts,*/ function(err, row) {
         if (err) { return raiseError('load', err, cb);  }
 
         seneca.log(args.tag$, 'load', ent);
@@ -80,8 +104,9 @@ module.exports = function(opts) {
     list: function (args, cb) {
       var qent = args.qent;
       var data = fixquery(args.q);
+      var opts = makeOpts(args.q);
 
-      db[args.name].find(data, function(err, rows) {
+      db[args.name].find(data, opts, function(err, rows) {
         if (err) { return raiseError('list', err, cb);  }
 
         var list = rows.map(function(row) {	return qent.make$(row);	});
@@ -110,7 +135,6 @@ module.exports = function(opts) {
 
   var meta = seneca.store.init(seneca, opts, store);
   desc = meta.desc;
-
 
   seneca.add({init:store.name,tag:meta.tag},function(args,done){
     configure(opts,function(err){
