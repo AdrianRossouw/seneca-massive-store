@@ -53,26 +53,30 @@ describe('blog seneca calls', function() {
 		});
 	});
 
-	it.skip('update', function(done) {
+
+	it('update', function(done) {
 		loadedEnt.content = 'test changed';
 
-		loadedEnt.save$(function(err, ent) {
-			var _query = {
-				q: {
-					id: ent.id
-				}
-			}
+    loadedEnt.save$(function(err, ent) {
+      var ent = seneca.make('-/-/blog');
+      ent.load$(loadedEnt.id, function(err) {
+        assert.equal(ent.content, loadedEnt.content);
+        done();
+      });
 
-		  	queries.load(_query)
-				.then(function(rows) {
-
-					assert.equal(rows[0].content, loadedEnt.content);
-					done();
-				});
 		});
 	});
 
-	it.skip('remove', function(done) {
+	it('list', function(done) {
+		var ent = seneca.make$('-/-/blog');
+
+    ent.list$(function(err, rows) {
+      assert.equal(rows.length, 1);
+			done();
+		});
+  });
+
+	it('remove', function(done) {
 		var ent = seneca.make$('-/-/blog');
 		ent.id = id;
 

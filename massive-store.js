@@ -81,7 +81,7 @@ module.exports = function(opts) {
       var qent = args.qent;
       var data = fixquery(args.q);
 
-      db[ent.name].list(args, function(err, rows) {
+      db[args.name].find(data, function(err, rows) {
         if (err) { return raiseError('list', err, cb);  }
 
         var list = rows.map(function(row) {	return qent.make$(row);	});
@@ -92,11 +92,12 @@ module.exports = function(opts) {
 
     remove: function (args, cb) {
       var qent = args.qent;
+      var data = fixquery(args.q);
 
-      db[ent.name].remove(args, function(err, rows) {
+      db[args.name].destroy(data, function(err, rows) {
         if (err) { return raiseError('remove', err, cb);  }
 
-        var result = {rowCount: res};
+        var result = {rowCount: rows.length};
 
         seneca.log(args.tag$, 'remove', result.rowCount);
         cb(null, result);
